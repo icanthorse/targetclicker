@@ -10,17 +10,60 @@
             overflow: hidden; /* Prevent scrollbars when canvas is full screen */
             display: flex;
             justify-content: center;
-            align-items: center;
+            /* align-items: center; Removed to allow game-info to be top-left */
             min-height: 100vh;
             background-color: #333;
+            color: #fff; /* Default text color */
+            font-family: Arial, sans-serif;
+            position: relative; /* For positioning overlays */
         }
         #gameCanvas {
             background-color: #222;
-            /* border: 1px solid #fff; Optional: remove border or use box-sizing */
+            display: block; /* To ensure it doesn't have extra space below */
+        }
+        .game-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            z-index: 10;
+            display: flex; /* Use flexbox for layout */
+            justify-content: space-between; /* Puts space between score and timer */
+            width: calc(100% - 20px); /* Full width minus padding */
+            box-sizing: border-box;
+        }
+        .game-info #timer {
+            /* No specific positioning needed now, flexbox handles it */
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0,0,0,0.75);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 20;
+            display: none; /* Hidden by default */
+        }
+        #gameOverScreen h2 {
+            margin-top: 0;
         }
     </style>
 </head>
 <body>
+    <div class="game-info">
+        <span id="score">Score: 0</span>
+        <span id="timer">Time: 30</span>
+    </div>
+
+    <div id="gameOverScreen">
+        <h2>Game Over!</h2>
+        <p id="finalScore">Your Score: 0</p>
+        <button id="restartButton">Play Again</button>
+    </div>
+
     <canvas id="gameCanvas">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
@@ -30,12 +73,24 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
  
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+
         let targetX;
         let targetY;
         const targetRadius = 20;
         const targetColor = 'red';
  
+        let score = 0;
+        let timeLeft = 30; // Initial time for the game
+        let gameInterval = null;
+        let gameOver = true; // Game starts in a "game over" state until explicitly started
+
         function drawTarget() {
+            if (gameOver) return; // Don't draw if game over
             ctx.beginPath();
             ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2, false);
             ctx.fillStyle = targetColor;
@@ -44,41 +99,104 @@
         }
 
         function spawnTarget() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-            // Ensure target is fully within canvas
+            if (gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
             targetX = Math.random() * (canvas.width - targetRadius * 2) + targetRadius;
             targetY = Math.random() * (canvas.height - targetRadius * 2) + targetRadius;
-            drawTarget();
+            drawTarget(); 
         }
  
         canvas.addEventListener('click', function(event) {
-            const rect = canvas.getBoundingClientRect(); // Get canvas position
+            if (gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
             const clickX = event.clientX - rect.left;
             const clickY = event.clientY - rect.top;
  
-            // Check if click is inside the target
             const distance = Math.sqrt(
                 (clickX - targetX) * (clickX - targetX) +
                 (clickY - targetY) * (clickY - targetY)
             );
  
             if (distance < targetRadius) {
+                score++;
+                updateScoreDisplay();
                 spawnTarget(); 
             }
         });
- 
+
+        restartButton.addEventListener('click', startGame);
+  
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             
-            // When canvas is resized, we need to redraw elements
-            // For this game, simply spawning a new target works well
-            spawnTarget();
+            if (!gameOver) {
+                spawnTarget(); 
+            } else {
+                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                 // Ensure game over screen is still visible if it was up
+                 if (gameOverScreen.style.display === 'block') {
+                    // No specific redraw needed for gameOverScreen, CSS handles its position
+                 }
+            }
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function updateTimerDisplay() {
+            timerDisplay.textContent = `Time: ${timeLeft}`;
+        }
+
+        function tick() {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(gameInterval);
+                gameOver = true;
+                finalScoreDisplay.textContent = `Your Score: ${score}`;
+                gameOverScreen.style.display = 'block';
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            }
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30; // Reset to 30 or your desired game length
+            gameOver = false;
+            
+            updateScoreDisplay();
+            updateTimerDisplay();
+            gameOverScreen.style.display = 'none';
+            
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(tick, 1000);
+            
+            // Important: Call resizeCanvas once before the first spawnTarget in a new game
+            // to ensure canvas dimensions are set from potential previous game over state
+            // and then spawn target in the correctly sized canvas.
+            // resizeCanvas(); // This will also call spawnTarget if !gameOver
+            // Actually, spawnTarget should be called directly after setting up game state.
+            // resizeCanvas will handle the initial sizing and subsequent resizes.
+            spawnTarget(); // Spawn the first target for the new game
         }
 
         // Initial setup
         window.addEventListener('resize', resizeCanvas);
-        resizeCanvas(); // Call once to set initial size and draw target
+        resizeCanvas(); // Set initial canvas size and draw based on initial gameOver state
+        
+        // Game should start in a "ready to play" state, often showing the game over screen
+        // as an initial menu or just waiting for the first "startGame" call.
+        // Let's make it so you see the "Play Again" button initially to start.
+        gameOver = true; // Explicitly set game over
+        finalScoreDisplay.textContent = "Click 'Play Again' to Start!"; // Initial message
+        scoreDisplay.textContent = "Score: -";
+        timerDisplay.textContent = "Time: -";
+        gameOverScreen.style.display = 'block'; // Show the "menu"
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas initially
+        // Do not call startGame() here, let the button press do it.
 
     </script>
 </body>
