@@ -3,97 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Target Clicker</title>
+    <title>Target Clicker Game</title>
     <style>
         body {
             margin: 0;
-            overflow: hidden; /* Prevent scrollbars when canvas is full screen */
+            overflow: hidden;
             display: flex;
-            justify-content: center;
-            /* align-items: center; Removed to allow game-info to be top-left */
+            flex-direction: column; /* Allow UI and canvas to stack */
+            justify-content: center; /* Center canvas container */
+            align-items: center; /* Center canvas container */
             min-height: 100vh;
-            background-color: #333;
-            color: #fff; /* Default text color */
-            font-family: Arial, sans-serif;
-            position: relative; /* For positioning overlays */
+            background-color: #2c3e50; /* A slightly nicer dark blue-gray */
+            color: #ecf0f1; /* Light gray / off-white */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        #gameContainer {
+            position: relative; /* For positioning UI elements over the canvas */
+            max-width: 800px; /* Max width for the game area */
+            max-height: 600px; /* Max height for the game area */
+            width: 100%; /* Take full available width up to max-width */
+            height: 100%; /* Take full available height up to max-height */
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
         #gameCanvas {
-            background-color: #222;
-            display: block; /* To ensure it doesn't have extra space below */
+            background-color: #34495e; /* A darker shade for the canvas */
+            display: block;
+            width: 100%; /* Canvas fills its container */
+            height: 100%; /* Canvas fills its container */
         }
-        .game-info {
+
+        .ui-overlay {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 24px;
-            z-index: 10;
-            display: flex; /* Use flexbox for layout */
-            justify-content: space-between; /* Puts space between score and timer */
-            width: calc(100% - 20px); /* Full width minus padding */
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
             box-sizing: border-box;
+            z-index: 10;
         }
-        .game-info #timer {
-            /* No specific positioning needed now, flexbox handles it */
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        #gameOverScreen {
+        .game-info #score { margin-left: 5px; }
+        .game-info #timer { margin-right: 5px; }
+
+
+        #interactionScreen { /* Renamed from gameOverScreen for more general use */
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0,0,0,0.75);
-            padding: 20px;
-            border-radius: 10px;
+            background-color: rgba(44, 62, 80, 0.9); /* Match body bg but slightly transparent */
+            padding: 25px;
+            border-radius: 12px;
             text-align: center;
             z-index: 20;
             display: none; /* Hidden by default */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        #gameOverScreen h2 {
+        #interactionScreen h2 {
             margin-top: 0;
+            color: #3498db; /* A nice blue */
         }
+        #interactionScreen p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        #interactionScreen button {
+            background-color: #3498db; /* Blue */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+        #interactionScreen button:hover {
+            background-color: #2980b9; /* Darker blue */
+        }
+        #interactionScreen button.secondary {
+            background-color: #95a5a6; /* Silver */
+        }
+        #interactionScreen button.secondary:hover {
+            background-color: #7f8c8d; /* Darker silver */
+        }
+
+        #optionsMenu {
+            /* Styles similar to interactionScreen, could be merged or extend */
+            padding: 20px;
+        }
+         #optionsMenu label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        #optionsMenu select, #optionsMenu input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #7f8c8d;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            width: calc(100% - 18px); /* Full width minus padding */
+        }
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+            border: 2px solid #ecf0f1;
+        }
+
     </style>
 </head>
 <body>
-    <div class="game-info">
-        <span id="score">Score: 0</span>
-        <span id="timer">Time: 30</span>
+    <div id="gameContainer">
+        <div class="ui-overlay">
+            <div class="game-info">
+                <span id="score">Score: 0</span>
+                <span id="timer">Time: 30</span>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas">Your browser does not support the HTML5 canvas tag.</canvas>
+
+        <div id="interactionScreen">
+            <div id="gameOverContent">
+                <h2>Game Over!</h2>
+                <p id="finalScore">Your Score: 0</p>
+            </div>
+            <div id="optionsMenu" style="display:none;">
+                <h2>Options</h2>
+                <div>
+                    <label for="timeSelect">Game Time (seconds):</label>
+                    <select id="timeSelect">
+                        <option value="30">30</option>
+                        <option value="60">60</option>
+                        <option value="120">120</option>
+                        <option value="240">240</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="colorSelect">Target Color:</label>
+                    <select id="colorSelect">
+                        <option value="#e74c3c">Crimson Red</option>
+                        <option value="#f1c40f">Sunflower Yellow</option>
+                        <option value="#2ecc71">Emerald Green</option>
+                        <option value="#3498db">Peter River Blue</option>
+                        <option value="#ecf0f1">Clouds White</option>
+                        <option value="#555555">Asbestos Black</option> <!-- Not pure black -->
+                    </select>
+                    <span id="colorPreview" class="color-preview"></span>
+                </div>
+                <button id="saveOptionsButton">Apply & Close</button>
+            </div>
+            <div id="mainMenuButtons">
+                 <button id="playButton">Play Game</button> <!-- Changed from restartButton -->
+                 <button id="optionsButton" class="secondary">Options</button>
+            </div>
+        </div>
     </div>
 
-    <div id="gameOverScreen">
-        <h2>Game Over!</h2>
-        <p id="finalScore">Your Score: 0</p>
-        <button id="restartButton">Play Again</button>
-    </div>
-
-    <canvas id="gameCanvas">
-        Your browser does not support the HTML5 canvas tag.
-    </canvas>
     <script>
         console.log("Game script loaded!");
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('gameContainer');
  
         const scoreDisplay = document.getElementById('score');
         const timerDisplay = document.getElementById('timer');
-        const gameOverScreen = document.getElementById('gameOverScreen');
+        
+        const interactionScreen = document.getElementById('interactionScreen');
+        const gameOverContent = document.getElementById('gameOverContent');
         const finalScoreDisplay = document.getElementById('finalScore');
-        const restartButton = document.getElementById('restartButton');
+        const optionsMenu = document.getElementById('optionsMenu');
+        const mainMenuButtons = document.getElementById('mainMenuButtons');
 
-        let targetX;
-        let targetY;
-        const targetRadius = 20;
-        const targetColor = 'red';
- 
+        const playButton = document.getElementById('playButton');
+        const optionsButton = document.getElementById('optionsButton');
+        const saveOptionsButton = document.getElementById('saveOptionsButton');
+        const timeSelect = document.getElementById('timeSelect');
+        const colorSelect = document.getElementById('colorSelect');
+        const colorPreview = document.getElementById('colorPreview');
+
+        let targetX, targetY;
+        let targetRadius = 20; // Initial target radius
+        
+        // Configurable options
+        let gameDuration = 30; // Default game duration
+        let currentTargetColor = '#e74c3c'; // Default: Crimson Red
+
         let score = 0;
-        let timeLeft = 30; // Initial time for the game
+        let timeLeft = gameDuration;
         let gameInterval = null;
-        let gameOver = true; // Game starts in a "game over" state until explicitly started
+        let gameOver = true;
+
+        // UI Constants
+        const UI_TOP_PADDING = 50; // Pixels to reserve for score/timer display
+
+        function updateColorPreview() {
+            colorPreview.style.backgroundColor = colorSelect.value;
+        }
+
+        function loadOptions() {
+            gameDuration = parseInt(localStorage.getItem('gameTime') || '30');
+            currentTargetColor = localStorage.getItem('targetColor') || '#e74c3c';
+            
+            timeSelect.value = gameDuration.toString();
+            colorSelect.value = currentTargetColor;
+            updateColorPreview();
+        }
+
+        function saveOptions() {
+            gameDuration = parseInt(timeSelect.value);
+            currentTargetColor = colorSelect.value;
+
+            localStorage.setItem('gameTime', gameDuration.toString());
+            localStorage.setItem('targetColor', currentTargetColor);
+            
+            // If game is not active, update timer display immediately
+            if (gameOver) {
+                timeLeft = gameDuration;
+                updateTimerDisplay();
+            }
+            showMainMenu();
+        }
+
+        function showGameOver() {
+            gameOverContent.style.display = 'block';
+            optionsMenu.style.display = 'none';
+            mainMenuButtons.style.display = 'block'; // Show Play/Options buttons
+            finalScoreDisplay.textContent = `Your Score: ${score}`;
+            interactionScreen.style.display = 'block';
+        }
+
+        function showOptionsMenu() {
+            gameOverContent.style.display = 'none';
+            optionsMenu.style.display = 'block';
+            mainMenuButtons.style.display = 'none'; // Hide Play/Options during options
+            interactionScreen.style.display = 'block';
+        }
+        
+        function showMainMenu() {
+            gameOverContent.style.display = 'none'; // Hide game over text
+            optionsMenu.style.display = 'none';
+            mainMenuButtons.style.display = 'block';
+            finalScoreDisplay.textContent = "Click 'Play Game' to Start!"; // Or custom welcome
+             scoreDisplay.textContent = "Score: -";
+             timerDisplay.textContent = `Time: ${gameDuration}`; // Show selected duration
+            interactionScreen.style.display = 'block';
+        }
+
 
         function drawTarget() {
-            if (gameOver) return; // Don't draw if game over
+            if (gameOver) return;
             ctx.beginPath();
             ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2, false);
-            ctx.fillStyle = targetColor;
+            ctx.fillStyle = currentTargetColor;
             ctx.fill();
             ctx.closePath();
         }
@@ -101,8 +282,17 @@
         function spawnTarget() {
             if (gameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            // Ensure target spawns below the UI_TOP_PADDING and within canvas boundaries
             targetX = Math.random() * (canvas.width - targetRadius * 2) + targetRadius;
-            targetY = Math.random() * (canvas.height - targetRadius * 2) + targetRadius;
+            targetY = Math.random() * (canvas.height - targetRadius * 2 - UI_TOP_PADDING) + targetRadius + UI_TOP_PADDING;
+            // Clamp Y to ensure it's not too low if canvas is very short
+            targetY = Math.min(targetY, canvas.height - targetRadius);
+            targetY = Math.max(targetY, targetRadius + UI_TOP_PADDING); // Ensure above bottom if UI padding is large
+            // Clamp X
+            targetX = Math.min(targetX, canvas.width - targetRadius);
+            targetX = Math.max(targetX, targetRadius);
+
+
             drawTarget(); 
         }
  
@@ -125,20 +315,33 @@
             }
         });
 
-        restartButton.addEventListener('click', startGame);
+        playButton.addEventListener('click', startGame);
+        optionsButton.addEventListener('click', showOptionsMenu);
+        saveOptionsButton.addEventListener('click', saveOptions);
+        colorSelect.addEventListener('change', updateColorPreview);
   
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        function resizeGameContainerAndCanvas() {
+            // Resize container first
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let containerWidth = Math.min(viewportWidth, 800); // Max width 800px
+            let containerHeight = Math.min(viewportHeight, 600); // Max height 600px
+            
+            // Maintain aspect ratio if needed, or just fill
+            // For simplicity, we'll just use the constrained dimensions
+            gameContainer.style.width = `${containerWidth}px`;
+            gameContainer.style.height = `${containerHeight}px`;
+
+            // Then resize canvas to fill the new container size
+            canvas.width = gameContainer.clientWidth;
+            canvas.height = gameContainer.clientHeight;
             
             if (!gameOver) {
                 spawnTarget(); 
             } else {
                  ctx.clearRect(0, 0, canvas.width, canvas.height);
-                 // Ensure game over screen is still visible if it was up
-                 if (gameOverScreen.style.display === 'block') {
-                    // No specific redraw needed for gameOverScreen, CSS handles its position
-                 }
+                 // Re-center interaction screen if visible (CSS transform should handle this mostly)
             }
         }
 
@@ -156,47 +359,33 @@
             if (timeLeft <= 0) {
                 clearInterval(gameInterval);
                 gameOver = true;
-                finalScoreDisplay.textContent = `Your Score: ${score}`;
-                gameOverScreen.style.display = 'block';
+                showGameOver();
                 ctx.clearRect(0, 0, canvas.width, canvas.height); 
             }
         }
 
         function startGame() {
             score = 0;
-            timeLeft = 30; // Reset to 30 or your desired game length
+            timeLeft = gameDuration; // Use selected game duration
             gameOver = false;
             
             updateScoreDisplay();
             updateTimerDisplay();
-            gameOverScreen.style.display = 'none';
+            interactionScreen.style.display = 'none'; // Hide the whole interaction screen
             
             if (gameInterval) clearInterval(gameInterval);
             gameInterval = setInterval(tick, 1000);
             
-            // Important: Call resizeCanvas once before the first spawnTarget in a new game
-            // to ensure canvas dimensions are set from potential previous game over state
-            // and then spawn target in the correctly sized canvas.
-            // resizeCanvas(); // This will also call spawnTarget if !gameOver
-            // Actually, spawnTarget should be called directly after setting up game state.
-            // resizeCanvas will handle the initial sizing and subsequent resizes.
-            spawnTarget(); // Spawn the first target for the new game
+            spawnTarget();
         }
 
         // Initial setup
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas(); // Set initial canvas size and draw based on initial gameOver state
+        window.addEventListener('resize', resizeGameContainerAndCanvas);
+        loadOptions(); // Load saved options or defaults
+        resizeGameContainerAndCanvas(); // Set initial canvas size
         
-        // Game should start in a "ready to play" state, often showing the game over screen
-        // as an initial menu or just waiting for the first "startGame" call.
-        // Let's make it so you see the "Play Again" button initially to start.
-        gameOver = true; // Explicitly set game over
-        finalScoreDisplay.textContent = "Click 'Play Again' to Start!"; // Initial message
-        scoreDisplay.textContent = "Score: -";
-        timerDisplay.textContent = "Time: -";
-        gameOverScreen.style.display = 'block'; // Show the "menu"
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas initially
-        // Do not call startGame() here, let the button press do it.
+        showMainMenu(); // Show the main menu (which is the interaction screen in its initial state)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     </script>
 </body>
