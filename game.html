@@ -30,21 +30,52 @@
     <script>
         // JavaScript will go here
         console.log("Game script loaded!");
-
+ 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        function drawTarget(x, y, radius, color) {
+ 
+        let targetX;
+        let targetY;
+        const targetRadius = 20;
+        const targetColor = 'red';
+ 
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+ 
+        function drawTarget() { // Now uses global targetX, targetY, targetRadius, targetColor
             ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
-            ctx.fillStyle = color;
+            ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2, false);
+            ctx.fillStyle = targetColor;
             ctx.fill();
             ctx.closePath();
         }
-
-        // Draw an initial static target
-        drawTarget(canvas.width / 2, canvas.height / 2, 20, 'red');
-
+ 
+        function spawnTarget() {
+            clearCanvas(); // Clear before spawning a new one
+            // Ensure target is fully within canvas
+            targetX = Math.random() * (canvas.width - targetRadius * 2) + targetRadius;
+            targetY = Math.random() * (canvas.height - targetRadius * 2) + targetRadius;
+            drawTarget();
+        }
+ 
+        canvas.addEventListener('click', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+ 
+            // Check if click is inside the target
+            const distance = Math.sqrt(
+                (clickX - targetX) * (clickX - targetX) +
+                (clickY - targetY) * (clickY - targetY)
+            );
+ 
+            if (distance < targetRadius) {
+                spawnTarget(); // Just call spawn, which now also clears
+            }
+        });
+ 
+        // Initial target spawn
+        spawnTarget();
     </script>
 </body>
-</html>
