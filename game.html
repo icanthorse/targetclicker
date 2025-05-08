@@ -8,21 +8,43 @@
         /* CSS will go here */
         body {
             margin: 0;
-            overflow: hidden; /* Often good for canvas games */
+            /* overflow: hidden; Commented out for now, might re-enable later */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background-color: #333;
+            color: #fff; /* For any potential text outside canvas */
+        }
+        #gameCanvas {
+            border: 1px solid #fff;
+            background-color: #222; /* Slightly lighter than body for contrast */
         }
     </style>
 </head>
 <body>
-    <!-- HTML game elements will go here, e.g., a canvas -->
+    <canvas id="gameCanvas" width="600" height="400">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
 
     <script>
         // JavaScript will go here
         console.log("Game script loaded!");
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawTarget(x, y, radius, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Draw an initial static target
+        drawTarget(canvas.width / 2, canvas.height / 2, 20, 'red');
+
     </script>
 </body>
 </html>
