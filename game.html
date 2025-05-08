@@ -5,32 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Awesome Game</title>
     <style>
-        /* CSS will go here */
         body {
             margin: 0;
-            /* overflow: hidden; Commented out for now, might re-enable later */
+            overflow: hidden; /* Prevent scrollbars when canvas is full screen */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             background-color: #333;
-            color: #fff; /* For any potential text outside canvas */
         }
         #gameCanvas {
-            border: 1px solid #fff;
-            background-color: #222; /* Slightly lighter than body for contrast */
+            background-color: #222;
+            /* border: 1px solid #fff; Optional: remove border or use box-sizing */
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="400">
+    <canvas id="gameCanvas">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
-
     <script>
-        // JavaScript will go here
         console.log("Game script loaded!");
- 
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
  
@@ -39,20 +35,16 @@
         const targetRadius = 20;
         const targetColor = 'red';
  
-        function clearCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
- 
-        function drawTarget() { // Now uses global targetX, targetY, targetRadius, targetColor
+        function drawTarget() {
             ctx.beginPath();
             ctx.arc(targetX, targetY, targetRadius, 0, Math.PI * 2, false);
             ctx.fillStyle = targetColor;
             ctx.fill();
             ctx.closePath();
         }
- 
+
         function spawnTarget() {
-            clearCanvas(); // Clear before spawning a new one
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
             // Ensure target is fully within canvas
             targetX = Math.random() * (canvas.width - targetRadius * 2) + targetRadius;
             targetY = Math.random() * (canvas.height - targetRadius * 2) + targetRadius;
@@ -60,7 +52,7 @@
         }
  
         canvas.addEventListener('click', function(event) {
-            const rect = canvas.getBoundingClientRect();
+            const rect = canvas.getBoundingClientRect(); // Get canvas position
             const clickX = event.clientX - rect.left;
             const clickY = event.clientY - rect.top;
  
@@ -71,11 +63,23 @@
             );
  
             if (distance < targetRadius) {
-                spawnTarget(); // Just call spawn, which now also clears
+                spawnTarget(); 
             }
         });
  
-        // Initial target spawn
-        spawnTarget();
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // When canvas is resized, we need to redraw elements
+            // For this game, simply spawning a new target works well
+            spawnTarget();
+        }
+
+        // Initial setup
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Call once to set initial size and draw target
+
     </script>
 </body>
+</html>
